@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 const {width, height} = Dimensions.get('window');
 import Realm from 'realm';
 import Pdf from 'react-native-pdf';
@@ -59,14 +59,13 @@ const PdfData = () => {
     });
     setStoredData([...realm.objects('PdfFile')]);
   };
-
-  const zoomIn = () => {
+  const zoomIn = useCallback(() => {
     setZoomLevel(prevZoomLevel => Math.min(prevZoomLevel + 0.5, 3));
-  };
+  }, []);
 
-  const zoomOut = () => {
+  const zoomOut = useCallback(() => {
     setZoomLevel(prevZoomLevel => Math.max(prevZoomLevel - 0.5, 1));
-  };
+  }, []);
 
   //   const zoomIn = useMemo(
   //     () => (zoom.current = Math.min(zoom.current + 0.5, 1)),
@@ -122,7 +121,7 @@ const PdfData = () => {
         <Modal
           visible={isModalVisible}
           transparent={true}
-          animationType="none"
+          animationType="slide"
           onRequestClose={closeModal}>
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
