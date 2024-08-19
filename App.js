@@ -17,6 +17,7 @@ import Toast from 'react-native-toast-message';
 import WorkoutDetails from './screens/Main/Profile/WorkoutDetails';
 import Report from './screens/Main/Profile/Report';
 import PdfData from './screens/Main/Profile/PdfData';
+import PdfComponent from './screens/Main/Profile/PdfComponent';
 
 const App = () => {
   const Stack = createNativeStackNavigator();
@@ -41,6 +42,7 @@ const App = () => {
           <Stack.Screen name="Details" component={WorkoutDetails} />
           <Stack.Screen name="Report" component={Report} />
           <Stack.Screen name="Data" component={PdfData} />
+          <Stack.Screen name="Component" component={PdfComponent} />
         </Stack.Navigator>
       </NavigationContainer>
       <Toast />

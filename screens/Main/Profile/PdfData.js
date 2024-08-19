@@ -10,10 +10,12 @@ import {
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 const {width, height} = Dimensions.get('window');
 import Realm from 'realm';
+import {useNavigation} from '@react-navigation/native';
 import Pdf from 'react-native-pdf';
 import {AppImages} from '../../../constants/images';
 import {ScrollView} from 'react-native-virtualized-view';
-
+import RNPrint from 'react-native-print';
+import Share from 'react-native-share';
 const PdfFileSchema = {
   name: 'PdfFile',
   properties: {
@@ -27,12 +29,15 @@ const PdfFileSchema = {
 
 const realm = new Realm({schema: [PdfFileSchema]});
 const PdfData = () => {
+  const navigation = useNavigation();
   const [storedData, setStoredData] = useState([]);
   const [selectedFileUri, setSelectedFileUri] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState(1);
-
+  const [zoomLevel, setZoomLevel] = useState();
+  const [currentPage, setCurrentPage] = useState(1);
   //   const zoom = useRef(1);
+
+  const pageRef = useRef(currentPage);
 
   useEffect(() => {
     const pdfFiles = realm.objects('PdfFile');
@@ -44,7 +49,7 @@ const PdfData = () => {
     setSelectedFileUri(uri);
     setIsModalVisible(true);
   };
-
+  console.log(currentPage);
   const closeModal = () => {
     setIsModalVisible(false);
     setSelectedFileUri(null);
@@ -59,6 +64,7 @@ const PdfData = () => {
     });
     setStoredData([...realm.objects('PdfFile')]);
   };
+
   const zoomIn = useCallback(() => {
     setZoomLevel(prevZoomLevel => Math.min(prevZoomLevel + 0.5, 3));
   }, []);
@@ -67,19 +73,24 @@ const PdfData = () => {
     setZoomLevel(prevZoomLevel => Math.max(prevZoomLevel - 0.5, 1));
   }, []);
 
-  //   const zoomIn = useMemo(
-  //     () => (zoom.current = Math.min(zoom.current + 0.5, 1)),
-  //     [zoomLevel],
-  //   );
-
-  //   const zoomOut = useMemo(
-  //     () => (zoom.current = Math.min(zoom.current - 0.5, 1)),
-  //     [zoomLevel],
-  //   );
+  const handlePage = useCallback((page, numberOfPages) => {
+    setCurrentPage(prevPage => {
+      if (prevPage !== page) {
+        console.log(page);
+        return page;
+      }
+      return prevPage;
+    });
+  }, []);
 
   return (
     <ScrollView>
-      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}>
         {storedData.length > 0 ? (
           storedData.map((file, index) => (
             <View
@@ -91,8 +102,15 @@ const PdfData = () => {
               }}>
               <TouchableOpacity
                 style={styles.fileBox}
-                onPress={() => handleFilePress(file.uri)}>
-                <Text>{file.name}</Text>
+                onPress={() =>
+                  navigation.navigate('Component', {
+                    file: file.uri,
+                    closeModal: closeModal,
+                  })
+                }>
+                <Text style={{color: 'black'}}>
+                  {file.name ? file.name : 'Untitled PDF'}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.deleteBox}
@@ -117,52 +135,6 @@ const PdfData = () => {
             </Text>
           </View>
         )}
-
-        <Modal
-          visible={isModalVisible}
-          transparent={true}
-          animationType="slide"
-          onRequestClose={closeModal}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              {selectedFileUri && (
-                <Pdf
-                  source={{uri: selectedFileUri, cache: true}}
-                  scale={zoomLevel}
-                  onLoadComplete={(numberOfPages, filePath) => {
-                    console.log(`Number of pages: ${numberOfPages}`);
-                  }}
-                  onPageChanged={(page, numberOfPages) => {
-                    console.log(`Current page: ${page}`);
-                  }}
-                  onError={error => {
-                    console.log(error);
-                  }}
-                  onPressLink={uri => {
-                    console.log(`Link pressed: ${uri}`);
-                  }}
-                  style={styles.pdf}
-                />
-              )}
-              <View style={styles.controls}>
-                <View style={styles.zoomBox}>
-                  <TouchableOpacity style={styles.zoomButton} onPress={zoomOut}>
-                    <Text style={styles.zoomButtonText}>-</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.zoomButton} onPress={zoomIn}>
-                    <Text style={styles.zoomButtonText}>+</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={closeModal}>
-                  <Text style={styles.closeButtonText}>Close</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
       </View>
     </ScrollView>
   );
@@ -209,7 +181,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    width: width * 0.99,
+    width: '100%',
     height: height * 0.99,
     backgroundColor: 'white',
     borderRadius: 10,
@@ -234,6 +206,7 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     height: '100%',
+    backgroundColor: 'black',
   },
   controls: {
     flexDirection: 'row',
@@ -259,5 +232,20 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
     fontSize: 20,
+  },
+  printButton: {
+    width: width * 0.2,
+    height: width * 0.1,
+    alignSelf: 'center',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 5,
+    marginVertical: 10,
+    backgroundColor: 'grey',
+    borderRadius: 5,
+  },
+  printButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
 });
